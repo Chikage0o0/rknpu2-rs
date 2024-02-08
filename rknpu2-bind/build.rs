@@ -22,26 +22,18 @@ const CHIP: Chip = Chip::RK356X;
 const CHIP: Chip = Chip::RV1106;
 
 #[cfg(feature = "aarch64")]
-const ARCH: Arch = Arch::Aarch64;
+const ARCH: Arch = Arch::AArch64;
 
 #[cfg(feature = "armhf")]
 const ARCH: Arch = Arch::Armhf;
 
 fn main() {
-    let lib_dir = PathBuf::from(env::var("OUT_DIR").unwrap())
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("runtime");
-    download_runtime(&lib_dir);
+    let lib_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("runtime");
+    download_rknn_files(&lib_dir);
 
     // Tell cargo to look for shared libraries in the specified directory
     println!("cargo:rustc-link-search={}", lib_dir.display());
     println!("cargo:rustc-link-lib=rknnrt");
-    println!("cargo:rustc-link-lib=rknn_api");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -92,7 +84,7 @@ fn features_check() {
     }
 }
 
-fn download_runtime(out_dir: &PathBuf) {
+fn download_rknn_files(out_dir: &PathBuf) {
     let mut runtime = HashMap::new();
 
     runtime.insert("librknnrt.so", format!("https://github.com/rockchip-linux/rknpu2/raw/{VERSION}/runtime/{CHIP}/Linux/librknn_api/{ARCH}/librknnrt.so"));
@@ -195,14 +187,14 @@ impl Display for Chip {
 }
 
 enum Arch {
-    Aarch64,
+    AArch64,
     Armhf,
 }
 
 impl Display for Arch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Arch::Aarch64 => write!(f, "aarch64"),
+            Arch::AArch64 => write!(f, "aarch64"),
             Arch::Armhf => write!(f, "armhf"),
         }
     }
