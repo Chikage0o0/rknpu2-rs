@@ -98,11 +98,6 @@ fn download_rknn_files(out_dir: &PathBuf) {
         }
     }
 
-    let download_dir = out_dir
-        .join(VERSION)
-        .join(CHIP.to_string())
-        .join(ARCH.to_string());
-
     if !download_dir.exists() {
         std::fs::create_dir_all(&download_dir).unwrap();
     }
@@ -117,6 +112,11 @@ fn download_rknn_files(out_dir: &PathBuf) {
         download_file(url, download_dir.join(file)).unwrap();
         symlink(download_dir.join(file), symlink_dir.join(file)).unwrap();
     }
+    symlink(
+        download_dir.join("librknnrt.so"),
+        download_dir.join("librknn_api.so"),
+    )
+    .unwrap();
 }
 
 fn download_file<P: AsRef<Path>>(url: &str, path: P) -> Result<()> {
@@ -131,9 +131,9 @@ fn download_file<P: AsRef<Path>>(url: &str, path: P) -> Result<()> {
         let mut builder = ClientBuilder::new();
 
         if let Some(proxy) = proxy.http {
-            builder = builder.proxy(reqwest::Proxy::all(proxy).unwrap());
+            builder = builder.proxy(reqwest::Proxy::http(proxy).unwrap());
         } else if let Some(proxy) = proxy.https {
-            builder = builder.proxy(reqwest::Proxy::all(proxy).unwrap());
+            builder = builder.proxy(reqwest::Proxy::https(proxy).unwrap());
         }
 
         builder.build().unwrap()
