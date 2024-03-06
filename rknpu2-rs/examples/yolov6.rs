@@ -279,7 +279,7 @@ fn main() {
     let img_array_view = image_to_array_view(&mut img_buffer);
 
     // setup rknn input
-    let rknn_inputs = make_rknn_image_input(img_array_view);
+    let rknn_inputs = make_rknn_input(vec![img_array_view]);
     let _ret = rknn_inputs_set(ctx, io_info.n_input, rknn_inputs);
 
     // run rknn

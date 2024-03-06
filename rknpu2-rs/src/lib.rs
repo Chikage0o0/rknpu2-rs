@@ -167,19 +167,24 @@ pub fn get_model_output_info(
 
 pub type RKNNInput = rknpu2_sys::rknn_input;
 pub type RKNNOutput = rknpu2_sys::rknn_output;
-pub fn make_rknn_image_input(mut image_array_view: ArrayViewMut<u8, IxDyn>) -> Vec<RKNNInput> {
+pub fn make_rknn_input(array_views: Vec<ArrayViewMut<u8, IxDyn>>) -> Vec<RKNNInput> {
     // RKNNInput tensor_inputs;
-    let tensor_inputs_layout = std::alloc::Layout::new::<RKNNInput>();
-    let mut tensor_inputs: RKNNInput =
-        unsafe { *(std::alloc::alloc_zeroed(tensor_inputs_layout) as *mut RKNNInput) };
+    let mut ret = Vec::with_capacity(array_views.len());
+    for (i, arr) in array_views.iter().enumerate() {
+        let tensor_inputs_layout = std::alloc::Layout::new::<RKNNInput>();
+        let mut tensor_inputs: RKNNInput =
+            unsafe { *(std::alloc::alloc_zeroed(tensor_inputs_layout) as *mut RKNNInput) };
 
-    tensor_inputs.index = 0;
-    tensor_inputs.type_ = rknpu2_sys::_rknn_tensor_type_RKNN_TENSOR_UINT8;
-    tensor_inputs.fmt = rknpu2_sys::_rknn_tensor_format_RKNN_TENSOR_NHWC;
-    tensor_inputs.size = image_array_view.len() as u32;
-    tensor_inputs.buf = image_array_view.as_mut_ptr() as *mut _ as *mut c_void;
+        tensor_inputs.index = i as u32;
+        tensor_inputs.type_ = rknpu2_sys::_rknn_tensor_type_RKNN_TENSOR_UINT8;
+        tensor_inputs.fmt = rknpu2_sys::_rknn_tensor_format_RKNN_TENSOR_NHWC;
+        tensor_inputs.size = arr.len() as u32;
+        tensor_inputs.buf = arr.as_ptr() as *mut c_void;
 
-    vec![tensor_inputs]
+        ret.push(tensor_inputs);
+    }
+
+    ret
 }
 
 pub fn rknn_inputs_set(
@@ -331,7 +336,7 @@ mod tests {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/bus.jpg");
         let mut img_buffer = read_image(path.into());
         let img_array_view = image_to_array_view(&mut img_buffer);
-        dbg!(make_rknn_image_input(img_array_view));
+        dbg!(make_rknn_input(vec![img_array_view]));
     }
 
     #[test]
@@ -345,7 +350,7 @@ mod tests {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/bus.jpg");
         let mut img_buffer = read_image(path.into());
         let img_array_view = image_to_array_view(&mut img_buffer);
-        let rknn_inputs = make_rknn_image_input(img_array_view);
+        let rknn_inputs = make_rknn_input(vec![img_array_view]);
         let ret = rknn_inputs_set(ctx, io_info.n_input, rknn_inputs);
         assert!(ret.is_ok());
     }
@@ -361,7 +366,7 @@ mod tests {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/bus.jpg");
         let mut img_buffer = read_image(path.into());
         let img_array_view = image_to_array_view(&mut img_buffer);
-        let rknn_inputs = make_rknn_image_input(img_array_view);
+        let rknn_inputs = make_rknn_input(vec![img_array_view]);
         let ret = rknn_inputs_set(ctx, io_info.n_input, rknn_inputs);
         assert!(ret.is_ok());
 
@@ -380,7 +385,7 @@ mod tests {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/bus.jpg");
         let mut img_buffer = read_image(path.into());
         let img_array_view = image_to_array_view(&mut img_buffer);
-        let rknn_inputs = make_rknn_image_input(img_array_view);
+        let rknn_inputs = make_rknn_input(vec![img_array_view]);
         let ret = rknn_inputs_set(ctx, io_info.n_input, rknn_inputs);
         assert!(ret.is_ok());
 
